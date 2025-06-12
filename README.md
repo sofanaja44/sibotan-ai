@@ -28,36 +28,6 @@ Dirancang untuk memberikan analisis pasar yang akurat, cepat, dan interaktif lan
 
 ---
 
-## 🖥️ Tampilan Terminal (Preview)
-
-```bash
-   _____ _ _             _         _  _   _     
-  / ____(_) |           (_)       | || | (_)    
- | (___  _| |_ ___  _ __ _ _______| || |_ _  ___ 
-  \___ \| | __/ _ \| '__| |_  / _ \__   _| |/ __|
-  ____) | | || (_) | |  | |/ /  __/  | | | | (__ 
- |_____/|_|\__\___/|_|  |_/___\___|  |_| |_|\___|
-
- ══════════════════════════════════════════════════════
-        Smart Interactive Bot for Trading Analysis
-      ① User Input   ② AI Analysis   ③ SL/TP Setup
-      ④ Output Result ⑤ Export (future feature)
- ══════════════════════════════════════════════════════
-               Build with ❤ by naoya_souta
- ══════════════════════════════════════════════════════
-
- 📈 Analisa: BTCUSDT [4H]
- ══════════════════════════════════════════════════════
- 🕒 Waktu Analisa : 2025-06-12 08:10:00
- 📊 Sinyal         : BUY
- 📥 Entry (OPEN)   : 67000.00
- 🔴 Stop Loss (SL) : 66500.00
- 🟢 Take Profit(TP): 68000.00
-
- 📌 Alasan:
- Entry berdasarkan support kuat, candle engulfing, dan RSI rebound dari area oversold.
- ```
-
 
 ## 💾 Instalasi
 
