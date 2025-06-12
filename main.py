@@ -11,6 +11,8 @@ from datetime import datetime
 from colorama import init, Fore, Style
 from pyfiglet import Figlet
 import shutil
+from telegram_bot import kirim_pesan_telegram
+
 
 # Inisialisasi colorama
 init(autoreset=True)
@@ -149,6 +151,8 @@ if __name__ == '__main__':
     print("\n🤖 Bot sedang menganalisis, mohon tunggu...", end="")
     sys.stdout.flush()
 
+   # ... [kode sebelumnya tidak berubah] ...
+
     prompt = f"""
 Lakukan analisa teknikal profesional terhadap pasangan {symbol} pada timeframe {timeframe.upper()}.
 
@@ -176,6 +180,7 @@ Detailkan analisa berdasarkan:
 -Jawaban harus meyakinkan, dan disampaikan seolah-olah dari analis profesional kepada trader lain. Jika tidak ada sinyal valid untuk entry, jelaskan alasannya secara objektif dan hindari memaksakan posisi.
 """.strip()
 
+    # ✅ try ini HARUS sejajar dengan prompt, bukan masuk ke dalam string prompt
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
@@ -183,6 +188,9 @@ Detailkan analisa berdasarkan:
         )
 
         jawaban = response.choices[0].message.content.strip()
+        if not jawaban or "SINYAL:" not in jawaban:
+            raise ValueError("AI tidak memberikan jawaban yang valid atau lengkap.")
+
         lines = jawaban.splitlines()
         sinyal_ai = next((l.replace("SINYAL:", "").strip() for l in lines if "SINYAL:" in l), "N/A")
 
@@ -195,7 +203,7 @@ Detailkan analisa berdasarkan:
         sl_price, _ = (sl_line.replace("SL:", "").split('-', 1) + [""])[:2]
         sl_price = sl_price.strip()
 
-        alasan_index = next((i for i, l in enumerate(lines) if "Alasan" in l), None)
+        alasan_index = next((i for i, l in enumerate(lines) if "Alasan" in l or "RISK" in l), None)
         alasan_bawah = "\n".join(lines[alasan_index + 1:]).strip() if alasan_index else ""
         alasan_full = f"{alasan_open}\n\n{alasan_bawah}".strip()
 
@@ -208,11 +216,14 @@ Detailkan analisa berdasarkan:
         print("═"*50)
         print(f"🕒 Waktu Analisa : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(Fore.CYAN + f"📊 Sinyal         : {sinyal_ai}")
-        print(Fore.GREEN + f"📥 Entry (OPEN)   : {open_price}")
-        print(Fore.RED + f"🔴 Stop Loss (SL) : {sl_price}")
-        print(Fore.GREEN + f"🟢 Take Profit(TP): {tp_price}")
+        print(Fore.GREEN + f"📥 Entry (OPEN)   : {open_price if open_price else 'N/A'}")
+        print(Fore.RED + f"🔴 Stop Loss (SL) : {sl_price if sl_price else 'N/A'}")
+        print(Fore.GREEN + f"🟢 Take Profit(TP): {tp_price if tp_price else '?'}")
         print("\n📌 Alasan:")
-        print(Fore.WHITE + alasan_full)
+        print(Fore.WHITE + (alasan_full if alasan_full else "AI tidak memberikan alasan lengkap."))
+        
 
     except Exception as e:
-        print(f"\n⚠️ Gagal proses hasil AI: {e}")
+        print("\n❌ Tidak bisa menganalisa setup entry saat ini.")
+        print(f"📉 Alasan: {str(e)}")
+        print("📢 Coba gunakan pair atau timeframe lain, atau periksa koneksi API.")
