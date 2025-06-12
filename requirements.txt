@@ -1,0 +1,6 @@
+pandas
+openai
+tradingview_ta
+colorama
+pyfiglet
+git+https://github.com/rongardF/tvdatafeed.git
