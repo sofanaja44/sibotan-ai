@@ -11,7 +11,6 @@ from datetime import datetime
 from colorama import init, Fore, Style
 from pyfiglet import Figlet
 import shutil
-from telegram_bot import kirim_pesan_telegram
 
 
 # Inisialisasi colorama
