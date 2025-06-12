@@ -1,4 +1,4 @@
-sk
+
 # config.py
 OPENAI_API_KEY = "YOUR-OPENAI_API"
 
