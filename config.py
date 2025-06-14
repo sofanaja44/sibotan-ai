@@ -1,7 +1,16 @@
+import os
 
-# config.py
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+TV_USER = os.getenv('TV_USER')
+TV_PASS = os.getenv('TV_PASS')
 
-# Login TradingView
-TV_USER = "sopeng2005@gmail.com"
-TV_PASS = "25Agustus2005@"
+required = {
+    'OPENAI_API_KEY': OPENAI_API_KEY,
+    'TV_USER': TV_USER,
+    'TV_PASS': TV_PASS,
+}
+missing = [name for name, value in required.items() if not value]
+if missing:
+    missing_vars = ', '.join(missing)
+    raise EnvironmentError(f"Missing required environment variable(s): {missing_vars}")
+

@@ -42,12 +42,12 @@ cd sibotan-ai
 pip install -r requirements.txt
 ```
 
-### 3. Buat file `config.py`
-```python
-# config.py
-OPENAI_API_KEY = "your_openai_key"
-TV_USER = "your_tradingview_username"
-TV_PASS = "your_tradingview_password"
+### 3. Set environment variable
+Sebelum menjalankan program, pastikan variabel berikut sudah di-set pada environment Anda:
+```bash
+export OPENAI_API_KEY="your_openai_key"
+export TV_USER="your_tradingview_username"
+export TV_PASS="your_tradingview_password"
 ```
 
 ---
