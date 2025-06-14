@@ -25,6 +25,7 @@ Dirancang untuk memberikan analisis pasar yang akurat, cepat, dan interaktif lan
 - 💹 SL & TP otomatis berdasarkan rasio Risk:Reward
 - 🎛️ User input dinamis dan fleksibel
 - 🖥️ Terminal interface dengan tampilan elegan dan responsive
+- 📂 Opsional menyimpan hasil analisa ke file
 
 ---
 
@@ -113,7 +114,7 @@ Harga berada di area demand kuat, didukung pola bullish engulfing dan RSI naik d
 
 ## 🌐 Roadmap (yang akan datang)
 
-- ☁️ Export hasil analisa ke file (.txt/.csv)
+- ☁️ Export hasil analisa ke file (.txt/.csv) **(selesai)**
 - 🤖 Integrasi Telegram Bot untuk sinyal otomatis
 - 🌐 Dashboard Web Live untuk rekap sinyal harian
 - 📈 Fitur Chart Visualization (candlestick rendering CLI)
