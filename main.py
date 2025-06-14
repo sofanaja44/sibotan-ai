@@ -1,6 +1,7 @@
 from tradingview_ta import TA_Handler, Interval, Exchange
 from tvDatafeed import TvDatafeed, Interval as TvInterval
-from config import OPENAI_API_KEY, TV_USER, TV_PASS
+from credentials import load_credentials, save_credentials
+import argparse
 import openai
 import pandas as pd
 import sys
@@ -15,6 +16,25 @@ import shutil
 
 # Inisialisasi colorama
 init(autoreset=True)
+
+# Parse CLI arguments
+parser = argparse.ArgumentParser(description="Sibotan Ai")
+parser.add_argument('--configure', action='store_true', help='Set or update saved credentials and exit')
+args = parser.parse_args()
+
+if args.configure:
+    creds = load_credentials()
+    creds['OPENAI_API_KEY'] = input('OPENAI_API_KEY: ').strip()
+    creds['TV_USER'] = input('TV_USER: ').strip()
+    creds['TV_PASS'] = input('TV_PASS: ').strip()
+    save_credentials(creds)
+    print('Credentials saved.')
+    sys.exit(0)
+
+import config
+OPENAI_API_KEY = config.OPENAI_API_KEY
+TV_USER = config.TV_USER
+TV_PASS = config.TV_PASS
 
 # Banner Responsive
 def tampilkan_banner():

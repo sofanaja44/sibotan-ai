@@ -43,13 +43,12 @@ cd sibotan-ai
 pip install -r requirements.txt
 ```
 
-### 3. Set environment variable
-Sebelum menjalankan program, pastikan variabel berikut sudah di-set pada environment Anda:
+### 3. Konfigurasi kredensial
+Jalankan perintah berikut untuk memasukkan API key dan akun TradingView Anda:
 ```bash
-export OPENAI_API_KEY="your_openai_key"
-export TV_USER="your_tradingview_username"
-export TV_PASS="your_tradingview_password"
+python main.py --configure
 ```
+Perintah di atas akan menanyakan `OPENAI_API_KEY`, `TV_USER`, dan `TV_PASS` lalu menyimpannya ke file `credentials.json`.
 
 ---
 
@@ -57,6 +56,7 @@ export TV_PASS="your_tradingview_password"
 ```bash
 python main.py
 ```
+Gunakan opsi `--configure` kapan saja jika ingin mengganti API key atau akun TradingView yang tersimpan.
 
 ---
 
