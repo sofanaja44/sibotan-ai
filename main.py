@@ -194,12 +194,15 @@ Detailkan analisa berdasarkan:
         sinyal_ai = next((l.replace("SINYAL:", "").strip() for l in lines if "SINYAL:" in l), "N/A")
 
         open_line = next((l for l in lines if "OPEN:" in l), "OPEN: N/A")
-        open_price, alasan_open = (open_line.replace("OPEN:", "").split('-', 1) + [""])[:2]
+        # AI sometimes uses en/em dashes; normalize them before splitting
+        open_clean = open_line.replace("OPEN:", "").replace("—", "-").replace("–", "-")
+        open_price, alasan_open = (open_clean.split('-', 1) + ["" ])[:2]
         open_price = open_price.strip()
         alasan_open = alasan_open.strip()
 
         sl_line = next((l for l in lines if "SL:" in l), "SL: N/A")
-        sl_price, _ = (sl_line.replace("SL:", "").split('-', 1) + [""])[:2]
+        sl_clean = sl_line.replace("SL:", "").replace("—", "-").replace("–", "-")
+        sl_price, _ = (sl_clean.split('-', 1) + [""])[:2]
         sl_price = sl_price.strip()
 
         alasan_index = next((i for i, l in enumerate(lines) if "Alasan" in l or "RISK" in l), None)
