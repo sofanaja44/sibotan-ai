@@ -206,7 +206,7 @@ Detailkan analisa berdasarkan:
         sl_price = sl_price.strip()
 
         alasan_index = next((i for i, l in enumerate(lines) if "Alasan" in l or "RISK" in l), None)
-        alasan_bawah = "\n".join(lines[alasan_index + 1:]).strip() if alasan_index else ""
+        alasan_bawah = "\n".join(lines[alasan_index + 1:]).strip() if alasan_index is not None else ""
         alasan_full = f"{alasan_open}\n\n{alasan_bawah}".strip()
 
         tp_price = calculate_tp(open_price, sl_price, sinyal_ai)
@@ -223,6 +223,23 @@ Detailkan analisa berdasarkan:
         print(Fore.GREEN + f"🟢 Take Profit(TP): {tp_price if tp_price else '?'}")
         print("\n📌 Alasan:")
         print(Fore.WHITE + (alasan_full if alasan_full else "AI tidak memberikan alasan lengkap."))
+
+        hasil_text = (
+            f"Analisa: {symbol} [{timeframe.upper()}]\n"
+            f"Waktu Analisa : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+            f"Sinyal         : {sinyal_ai}\n"
+            f"Entry (OPEN)   : {open_price if open_price else 'N/A'}\n"
+            f"Stop Loss (SL) : {sl_price if sl_price else 'N/A'}\n"
+            f"Take Profit(TP): {tp_price if tp_price else '?'}\n\n"
+            f"Alasan:\n{alasan_full if alasan_full else 'AI tidak memberikan alasan lengkap.'}\n"
+        )
+
+        if input("Simpan hasil ke file? (y/n): ").lower() == 'y':
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"hasil_{symbol}_{timeframe}_{timestamp}.txt"
+            with open(filename, 'w') as file:
+                file.write(hasil_text)
+            print(f"✅ Hasil disimpan di {filename}")
         
 
     except Exception as e:
