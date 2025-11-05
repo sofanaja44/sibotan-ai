@@ -10,7 +10,8 @@ def load_credentials():
     try:
         with open(CRED_FILE, 'r') as f:
             return json.load(f)
-    except Exception:
+    except (json.JSONDecodeError, IOError) as e:
+        # Return empty dict if file is corrupted or unreadable
         return {}
 
 def save_credentials(data):
