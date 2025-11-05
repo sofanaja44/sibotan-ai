@@ -8,10 +8,12 @@ import sys
 import contextlib
 import os
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime
+from datetime import datetime, timedelta
 from colorama import init, Fore, Style
 from pyfiglet import Figlet
 import shutil
+import hashlib
+import json
 
 
 # Inisialisasi colorama
@@ -70,7 +72,8 @@ with open(os.devnull, 'w') as fnull:
     with contextlib.redirect_stdout(fnull), contextlib.redirect_stderr(fnull):
         try:
             tv = TvDatafeed(username=TV_USER, password=TV_PASS)
-        except:
+        except Exception:
+            # Fallback to anonymous connection if credentials fail
             tv = TvDatafeed()
 
 # Mapping timeframe
@@ -93,25 +96,86 @@ interval_mapping_tv = {
     '1d': TvInterval.in_daily,
 }
 
+# Cache configuration
+CACHE_DIR = os.path.join(os.path.dirname(__file__), '.cache')
+CACHE_EXPIRY_MINUTES = 5  # Cache expires after 5 minutes
+
+def get_cache_key(symbol, timeframe, rr_ratio):
+    """Generate a unique cache key for the analysis."""
+    key_string = f"{symbol}_{timeframe}_{rr_ratio}"
+    return hashlib.md5(key_string.encode()).hexdigest()
+
+def load_from_cache(cache_key):
+    """Load analysis result from cache if not expired."""
+    if not os.path.exists(CACHE_DIR):
+        return None
+
+    cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json")
+    if not os.path.exists(cache_file):
+        return None
+
+    try:
+        with open(cache_file, 'r') as f:
+            cached_data = json.load(f)
+
+        # Check if cache is expired
+        cached_time = datetime.fromisoformat(cached_data['timestamp'])
+        if datetime.now() - cached_time > timedelta(minutes=CACHE_EXPIRY_MINUTES):
+            # Cache expired, remove it
+            os.remove(cache_file)
+            return None
+
+        return cached_data['result']
+    except (json.JSONDecodeError, KeyError, ValueError):
+        return None
+
+def save_to_cache(cache_key, result_data):
+    """Save analysis result to cache."""
+    if not os.path.exists(CACHE_DIR):
+        os.makedirs(CACHE_DIR)
+
+    cache_file = os.path.join(CACHE_DIR, f"{cache_key}.json")
+    cached_data = {
+        'timestamp': datetime.now().isoformat(),
+        'result': result_data
+    }
+
+    try:
+        with open(cache_file, 'w') as f:
+            json.dump(cached_data, f, indent=2)
+    except IOError:
+        pass  # Silently fail if cache write fails
+
 def extract_rr_ratio(text):
+    """Extract risk-reward ratio from string format like '1:2'."""
     try:
         r, rr = map(int, text.strip().split(':'))
         return r, rr
-    except:
+    except (ValueError, AttributeError):
         return None
 
 def calculate_tp(open_price_str, sl_price_str, signal):
+    """Calculate take profit based on risk-reward ratio."""
     try:
+        # Validate inputs
+        if not open_price_str or not sl_price_str or not signal:
+            return "?"
+
         open_f = Decimal(open_price_str.replace(',', ''))
         sl_f = Decimal(sl_price_str.replace(',', ''))
         risk = abs(open_f - sl_f)
+
+        # Avoid division by zero
+        if risk == 0:
+            return "?"
+
         reward = risk * (Decimal(reward_ratio) / Decimal(risk_ratio))
         tp_f = open_f + reward if signal.upper() == "BUY" else open_f - reward
         decimal_places = abs(open_price_str[::-1].find('.')) if '.' in open_price_str else 0
         quantize_str = '1.' + '0' * decimal_places if decimal_places > 0 else '1'
         tp_ai = tp_f.quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP)
         return str(tp_ai)
-    except:
+    except (ValueError, TypeError, ArithmeticError) as e:
         return "?"
 
 # Start program
@@ -130,6 +194,24 @@ if __name__ == '__main__':
 
     if timeframe not in interval_mapping_tv:
         print("\u26d4 Timeframe tidak valid.")
+        exit()
+
+    # Check cache first
+    cache_key = get_cache_key(symbol, timeframe, rr_input)
+    cached_result = load_from_cache(cache_key)
+
+    if cached_result:
+        print(Fore.YELLOW + "\n💾 Menggunakan hasil dari cache (< 5 menit yang lalu)...")
+        print("\n" + "═"*50)
+        print(Fore.YELLOW + f"📈 Analisa: {cached_result['symbol']} [{cached_result['timeframe']}]")
+        print("═"*50)
+        print(f"🕒 Waktu Analisa : {cached_result['timestamp']}")
+        print(Fore.CYAN + f"📊 Sinyal         : {cached_result['sinyal']}")
+        print(Fore.GREEN + f"📥 Entry (OPEN)   : {cached_result['open']}")
+        print(Fore.RED + f"🔴 Stop Loss (SL) : {cached_result['sl']}")
+        print(Fore.GREEN + f"🟢 Take Profit(TP): {cached_result['tp']}")
+        print("\n📌 Alasan:")
+        print(Fore.WHITE + cached_result['alasan'])
         exit()
 
     if symbol == 'XAUUSD':
@@ -213,17 +295,19 @@ Detailkan analisa berdasarkan:
         lines = jawaban.splitlines()
         sinyal_ai = next((l.replace("SINYAL:", "").strip() for l in lines if "SINYAL:" in l), "N/A")
 
+        # Parse OPEN price with more robust handling
         open_line = next((l for l in lines if "OPEN:" in l), "OPEN: N/A")
         # AI sometimes uses en/em dashes; normalize them before splitting
-        open_clean = open_line.replace("OPEN:", "").replace("—", "-").replace("–", "-")
-        open_price, alasan_open = (open_clean.split('-', 1) + ["" ])[:2]
-        open_price = open_price.strip()
-        alasan_open = alasan_open.strip()
+        open_clean = open_line.replace("OPEN:", "").replace("—", "-").replace("–", "-").replace("―", "-")
+        open_parts = open_clean.split('-', 1)
+        open_price = open_parts[0].strip() if len(open_parts) > 0 else "N/A"
+        alasan_open = open_parts[1].strip() if len(open_parts) > 1 else ""
 
+        # Parse SL price
         sl_line = next((l for l in lines if "SL:" in l), "SL: N/A")
-        sl_clean = sl_line.replace("SL:", "").replace("—", "-").replace("–", "-")
-        sl_price, _ = (sl_clean.split('-', 1) + [""])[:2]
-        sl_price = sl_price.strip()
+        sl_clean = sl_line.replace("SL:", "").replace("—", "-").replace("–", "-").replace("―", "-")
+        sl_parts = sl_clean.split('-', 1)
+        sl_price = sl_parts[0].strip() if len(sl_parts) > 0 else "N/A"
 
         alasan_index = next((i for i, l in enumerate(lines) if "Alasan" in l or "RISK" in l), None)
         alasan_bawah = "\n".join(lines[alasan_index + 1:]).strip() if alasan_index is not None else ""
@@ -231,12 +315,26 @@ Detailkan analisa berdasarkan:
 
         tp_price = calculate_tp(open_price, sl_price, sinyal_ai)
 
+        # Save to cache
+        analysis_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        cache_data = {
+            'symbol': symbol,
+            'timeframe': timeframe.upper(),
+            'timestamp': analysis_timestamp,
+            'sinyal': sinyal_ai,
+            'open': open_price if open_price else 'N/A',
+            'sl': sl_price if sl_price else 'N/A',
+            'tp': tp_price if tp_price else '?',
+            'alasan': alasan_full if alasan_full else "AI tidak memberikan alasan lengkap."
+        }
+        save_to_cache(cache_key, cache_data)
+
         print("\r" + " " * 80 + "\r", end="")
 
         print("\n" + "═"*50)
         print(Fore.YELLOW + f"📈 Analisa: {symbol} [{timeframe.upper()}]")
         print("═"*50)
-        print(f"🕒 Waktu Analisa : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🕒 Waktu Analisa : {analysis_timestamp}")
         print(Fore.CYAN + f"📊 Sinyal         : {sinyal_ai}")
         print(Fore.GREEN + f"📥 Entry (OPEN)   : {open_price if open_price else 'N/A'}")
         print(Fore.RED + f"🔴 Stop Loss (SL) : {sl_price if sl_price else 'N/A'}")
