@@ -2,7 +2,7 @@ from tradingview_ta import TA_Handler, Interval, Exchange
 from tvDatafeed import TvDatafeed, Interval as TvInterval
 from credentials import load_credentials, save_credentials
 import argparse
-import openai
+from openai import OpenAI
 import pandas as pd
 import sys
 import contextlib
@@ -26,7 +26,6 @@ args = parser.parse_args()
 
 if args.configure:
     creds = load_credentials()
-    creds['OPENAI_API_KEY'] = input('OPENAI_API_KEY: ').strip()
     creds['TV_USER'] = input('TV_USER: ').strip()
     creds['TV_PASS'] = input('TV_PASS: ').strip()
     save_credentials(creds)
@@ -34,7 +33,6 @@ if args.configure:
     sys.exit(0)
 
 import config
-OPENAI_API_KEY = config.OPENAI_API_KEY
 TV_USER = config.TV_USER
 TV_PASS = config.TV_PASS
 
@@ -64,8 +62,20 @@ def tampilkan_banner():
 
 # Tampilkan banner di awal
 
-# Setup API
-openai.api_key = OPENAI_API_KEY
+# Setup OpenAI OAuth token (tanpa API key)
+OPENAI_OAUTH_TOKEN = os.getenv('OPENAI_OAUTH_TOKEN') or load_credentials().get('OPENAI_OAUTH_TOKEN')
+if not OPENAI_OAUTH_TOKEN:
+    OPENAI_OAUTH_TOKEN = input('OPENAI_OAUTH_TOKEN (OAuth access token): ').strip()
+    if OPENAI_OAUTH_TOKEN:
+        creds = load_credentials()
+        creds['OPENAI_OAUTH_TOKEN'] = OPENAI_OAUTH_TOKEN
+        save_credentials(creds)
+
+if not OPENAI_OAUTH_TOKEN:
+    print('❌ OPENAI_OAUTH_TOKEN belum diisi. Silakan login OpenAI dan masukkan OAuth token Anda.')
+    sys.exit(1)
+
+client = OpenAI(api_key=OPENAI_OAUTH_TOKEN)
 
 # Redam output login
 with open(os.devnull, 'w') as fnull:
@@ -283,12 +293,12 @@ Detailkan analisa berdasarkan:
 
     # ✅ try ini HARUS sejajar dengan prompt, bukan masuk ke dalam string prompt
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}]
         )
 
-        jawaban = response.choices[0].message.content.strip()
+        jawaban = (response.choices[0].message.content or '').strip()
         if not jawaban or "SINYAL:" not in jawaban:
             raise ValueError("AI tidak memberikan jawaban yang valid atau lengkap.")
 
@@ -363,4 +373,4 @@ Detailkan analisa berdasarkan:
     except Exception as e:
         print("\n❌ Tidak bisa menganalisa setup entry saat ini.")
         print(f"📉 Alasan: {str(e)}")
-        print("📢 Coba gunakan pair atau timeframe lain, atau periksa koneksi API.")
+        print("📢 Coba gunakan pair/timeframe lain, atau ulangi login OAuth OpenAI Anda.")
