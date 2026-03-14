@@ -14,6 +14,7 @@ from pyfiglet import Figlet
 import shutil
 import hashlib
 import json
+from urllib import parse, request, error
 
 
 # Inisialisasi colorama
@@ -65,12 +66,149 @@ def tampilkan_banner():
 # Setup Codex OAuth token (tanpa API key)
 AI_MODEL = "codex-5.3"
 creds = load_credentials()
-CODEX_OAUTH_TOKEN = (
-    os.getenv('CODEX_OAUTH_TOKEN')
-    or os.getenv('CODEX_TOKEN')
-    or creds.get('CODEX_OAUTH_TOKEN')
-    or creds.get('OPENAI_OAUTH_TOKEN')
-)
+
+OAUTH_AUTHORIZE_URL = "https://auth.openai.com/oauth/authorize"
+OAUTH_TOKEN_URL = "https://auth.openai.com/oauth/token"
+
+
+def build_oauth_authorize_url(client_id, redirect_uri, state='sibotan-ai-login'):
+    params = {
+        'response_type': 'code',
+        'client_id': client_id,
+        'redirect_uri': redirect_uri,
+        'scope': 'openid offline_access',
+        'state': state,
+    }
+    return f"{OAUTH_AUTHORIZE_URL}?{parse.urlencode(params)}"
+
+
+def parse_authorization_code(raw_input):
+    value = (raw_input or '').strip()
+    if not value:
+        return ''
+
+    if '://' in value and 'code=' in value:
+        parsed = parse.urlparse(value)
+        query = parse.parse_qs(parsed.query)
+        return query.get('code', [''])[0]
+
+    return value
+
+
+def oauth_token_request(payload):
+    encoded_data = parse.urlencode(payload).encode('utf-8')
+    req = request.Request(
+        OAUTH_TOKEN_URL,
+        data=encoded_data,
+        headers={'Content-Type': 'application/x-www-form-urlencoded'},
+        method='POST',
+    )
+    with request.urlopen(req, timeout=20) as response:
+        body = response.read().decode('utf-8')
+        return json.loads(body)
+
+
+def exchange_authorization_code(client_id, client_secret, code, redirect_uri):
+    payload = {
+        'grant_type': 'authorization_code',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'code': code,
+        'redirect_uri': redirect_uri,
+    }
+    return oauth_token_request(payload)
+
+
+def refresh_oauth_token(client_id, client_secret, refresh_token):
+    payload = {
+        'grant_type': 'refresh_token',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'refresh_token': refresh_token,
+    }
+    return oauth_token_request(payload)
+
+
+def save_oauth_tokens(credentials, token_response):
+    access_token = token_response.get('access_token')
+    refresh_token = token_response.get('refresh_token')
+    expires_in = token_response.get('expires_in')
+
+    if access_token:
+        credentials['CODEX_OAUTH_TOKEN'] = access_token
+
+    if refresh_token:
+        credentials['OPENAI_REFRESH_TOKEN'] = refresh_token
+
+    if isinstance(expires_in, (int, float)):
+        expires_at = datetime.now() + timedelta(seconds=int(expires_in))
+        credentials['OPENAI_OAUTH_EXPIRES_AT'] = expires_at.isoformat()
+
+    save_credentials(credentials)
+
+
+def get_saved_oauth_token(credentials):
+    token = credentials.get('CODEX_OAUTH_TOKEN') or credentials.get('OPENAI_OAUTH_TOKEN')
+    expires_at = credentials.get('OPENAI_OAUTH_EXPIRES_AT')
+
+    if not token:
+        return ''
+
+    if not expires_at:
+        return token
+
+    try:
+        if datetime.now() < datetime.fromisoformat(expires_at):
+            return token
+    except ValueError:
+        return token
+
+    return ''
+
+
+CODEX_OAUTH_TOKEN = os.getenv('CODEX_OAUTH_TOKEN') or os.getenv('CODEX_TOKEN') or get_saved_oauth_token(creds)
+
+if not CODEX_OAUTH_TOKEN:
+    oauth_client_id = os.getenv('OPENAI_OAUTH_CLIENT_ID') or creds.get('OPENAI_OAUTH_CLIENT_ID')
+    oauth_client_secret = os.getenv('OPENAI_OAUTH_CLIENT_SECRET') or creds.get('OPENAI_OAUTH_CLIENT_SECRET')
+    oauth_redirect_uri = os.getenv('OPENAI_OAUTH_REDIRECT_URI') or creds.get('OPENAI_OAUTH_REDIRECT_URI')
+    oauth_refresh_token = os.getenv('OPENAI_REFRESH_TOKEN') or creds.get('OPENAI_REFRESH_TOKEN')
+
+    if oauth_client_id and oauth_client_secret and oauth_refresh_token:
+        try:
+            refreshed = refresh_oauth_token(oauth_client_id, oauth_client_secret, oauth_refresh_token)
+            save_oauth_tokens(creds, refreshed)
+            CODEX_OAUTH_TOKEN = refreshed.get('access_token', '')
+            if CODEX_OAUTH_TOKEN:
+                print('✅ OAuth token berhasil diperbarui otomatis via refresh token.')
+        except (error.HTTPError, error.URLError, json.JSONDecodeError):
+            pass
+
+    if not CODEX_OAUTH_TOKEN and oauth_client_id and oauth_client_secret and oauth_redirect_uri:
+        auth_url = build_oauth_authorize_url(oauth_client_id, oauth_redirect_uri)
+        print('\n🔐 Login OAuth OpenAI diperlukan untuk melanjutkan.')
+        print('1) Buka URL berikut di browser, login, lalu izinkan akses aplikasi:')
+        print(auth_url)
+        raw_code = input('2) Paste authorization code (atau URL redirect penuh): ').strip()
+        authorization_code = parse_authorization_code(raw_code)
+
+        if authorization_code:
+            try:
+                token_response = exchange_authorization_code(
+                    oauth_client_id,
+                    oauth_client_secret,
+                    authorization_code,
+                    oauth_redirect_uri,
+                )
+                save_oauth_tokens(creds, token_response)
+                CODEX_OAUTH_TOKEN = token_response.get('access_token', '')
+                if CODEX_OAUTH_TOKEN:
+                    print('✅ OAuth login berhasil. Access token sudah tersimpan.')
+            except error.HTTPError as http_error:
+                detail = http_error.read().decode('utf-8', errors='ignore')
+                print(f'❌ OAuth token exchange gagal: {detail or http_error.reason}')
+            except (error.URLError, json.JSONDecodeError) as exc:
+                print(f'❌ OAuth token exchange gagal: {exc}')
 
 if not CODEX_OAUTH_TOKEN:
     CODEX_OAUTH_TOKEN = input('CODEX_OAUTH_TOKEN (OAuth access token): ').strip()

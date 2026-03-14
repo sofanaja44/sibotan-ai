@@ -52,6 +52,19 @@ Perintah di atas akan menanyakan `TV_USER` dan `TV_PASS` lalu menyimpannya ke fi
 
 Saat menjalankan bot, login AI menggunakan `CODEX_OAUTH_TOKEN` (OAuth access token Codex/OpenAI), bukan API key.
 
+Untuk OAuth Login otomatis (authorization code flow), siapkan environment variable berikut:
+- `OPENAI_OAUTH_CLIENT_ID`
+- `OPENAI_OAUTH_CLIENT_SECRET`
+- `OPENAI_OAUTH_REDIRECT_URI`
+
+Jika ketiganya tersedia, bot akan:
+1. Menampilkan URL login OAuth (`https://auth.openai.com/oauth/authorize`)
+2. Meminta authorization code / redirect URL
+3. Menukar code ke token di endpoint (`https://auth.openai.com/oauth/token`)
+4. Menyimpan `access_token`, `refresh_token`, dan waktu expired ke `credentials.json`
+
+Setelah refresh token tersimpan, bot juga akan mencoba auto-refresh access token secara otomatis pada run berikutnya.
+
 ---
 
 ## 🚀 Cara Menjalankan
