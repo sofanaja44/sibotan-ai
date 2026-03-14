@@ -166,12 +166,42 @@ def get_saved_oauth_token(credentials):
     return ''
 
 
+def ensure_oauth_config(credentials):
+    oauth_client_id = os.getenv('OPENAI_OAUTH_CLIENT_ID') or credentials.get('OPENAI_OAUTH_CLIENT_ID', '')
+    oauth_client_secret = os.getenv('OPENAI_OAUTH_CLIENT_SECRET') or credentials.get('OPENAI_OAUTH_CLIENT_SECRET', '')
+    oauth_redirect_uri = os.getenv('OPENAI_OAUTH_REDIRECT_URI') or credentials.get('OPENAI_OAUTH_REDIRECT_URI', '')
+
+    missing_fields = []
+    if not oauth_client_id:
+        missing_fields.append('OPENAI_OAUTH_CLIENT_ID')
+    if not oauth_client_secret:
+        missing_fields.append('OPENAI_OAUTH_CLIENT_SECRET')
+    if not oauth_redirect_uri:
+        missing_fields.append('OPENAI_OAUTH_REDIRECT_URI')
+
+    if missing_fields:
+        print('\n🔐 Konfigurasi OAuth OpenAI belum lengkap.')
+        print('Masukkan detail OAuth app agar bisa login akun OpenAI langsung dari program.')
+
+        if not oauth_client_id:
+            oauth_client_id = input('OPENAI_OAUTH_CLIENT_ID: ').strip()
+        if not oauth_client_secret:
+            oauth_client_secret = input('OPENAI_OAUTH_CLIENT_SECRET: ').strip()
+        if not oauth_redirect_uri:
+            oauth_redirect_uri = input('OPENAI_OAUTH_REDIRECT_URI: ').strip()
+
+        credentials['OPENAI_OAUTH_CLIENT_ID'] = oauth_client_id
+        credentials['OPENAI_OAUTH_CLIENT_SECRET'] = oauth_client_secret
+        credentials['OPENAI_OAUTH_REDIRECT_URI'] = oauth_redirect_uri
+        save_credentials(credentials)
+
+    return oauth_client_id, oauth_client_secret, oauth_redirect_uri
+
+
 CODEX_OAUTH_TOKEN = os.getenv('CODEX_OAUTH_TOKEN') or os.getenv('CODEX_TOKEN') or get_saved_oauth_token(creds)
 
 if not CODEX_OAUTH_TOKEN:
-    oauth_client_id = os.getenv('OPENAI_OAUTH_CLIENT_ID') or creds.get('OPENAI_OAUTH_CLIENT_ID')
-    oauth_client_secret = os.getenv('OPENAI_OAUTH_CLIENT_SECRET') or creds.get('OPENAI_OAUTH_CLIENT_SECRET')
-    oauth_redirect_uri = os.getenv('OPENAI_OAUTH_REDIRECT_URI') or creds.get('OPENAI_OAUTH_REDIRECT_URI')
+    oauth_client_id, oauth_client_secret, oauth_redirect_uri = ensure_oauth_config(creds)
     oauth_refresh_token = os.getenv('OPENAI_REFRESH_TOKEN') or creds.get('OPENAI_REFRESH_TOKEN')
 
     if oauth_client_id and oauth_client_secret and oauth_refresh_token:
@@ -186,7 +216,7 @@ if not CODEX_OAUTH_TOKEN:
 
     if not CODEX_OAUTH_TOKEN and oauth_client_id and oauth_client_secret and oauth_redirect_uri:
         auth_url = build_oauth_authorize_url(oauth_client_id, oauth_redirect_uri)
-        print('\n🔐 Login OAuth OpenAI diperlukan untuk melanjutkan.')
+        print('\n🔐 Login akun OpenAI diperlukan untuk melanjutkan.')
         print('1) Buka URL berikut di browser, login, lalu izinkan akses aplikasi:')
         print(auth_url)
         raw_code = input('2) Paste authorization code (atau URL redirect penuh): ').strip()
@@ -203,7 +233,7 @@ if not CODEX_OAUTH_TOKEN:
                 save_oauth_tokens(creds, token_response)
                 CODEX_OAUTH_TOKEN = token_response.get('access_token', '')
                 if CODEX_OAUTH_TOKEN:
-                    print('✅ OAuth login berhasil. Access token sudah tersimpan.')
+                    print('✅ Login akun OpenAI berhasil. Access token sudah tersimpan otomatis.')
             except error.HTTPError as http_error:
                 detail = http_error.read().decode('utf-8', errors='ignore')
                 print(f'❌ OAuth token exchange gagal: {detail or http_error.reason}')
@@ -211,13 +241,7 @@ if not CODEX_OAUTH_TOKEN:
                 print(f'❌ OAuth token exchange gagal: {exc}')
 
 if not CODEX_OAUTH_TOKEN:
-    CODEX_OAUTH_TOKEN = input('CODEX_OAUTH_TOKEN (OAuth access token): ').strip()
-    if CODEX_OAUTH_TOKEN:
-        creds['CODEX_OAUTH_TOKEN'] = CODEX_OAUTH_TOKEN
-        save_credentials(creds)
-
-if not CODEX_OAUTH_TOKEN:
-    print('❌ CODEX_OAUTH_TOKEN belum diisi. Silakan login Codex/OpenAI dan masukkan OAuth token Anda.')
+    print('❌ Login akun OpenAI gagal. Pastikan OAuth app valid dan ulangi proses login.')
     sys.exit(1)
 
 client = OpenAI(api_key=CODEX_OAUTH_TOKEN)
