@@ -26,7 +26,19 @@ args = parser.parse_args()
 
 if args.configure:
     creds = load_credentials()
-    creds['OPENAI_API_KEY'] = input('OPENAI_API_KEY: ').strip()
+    auth_mode_input = input('OpenAI auth mode (oauth/api_key) [oauth]: ').strip().lower()
+    auth_mode = auth_mode_input if auth_mode_input in {'oauth', 'api_key'} else 'oauth'
+
+    if auth_mode == 'oauth':
+        token = input('OPENAI_OAUTH_TOKEN: ').strip()
+        creds['OPENAI_OAUTH_TOKEN'] = token
+        creds.pop('OPENAI_API_KEY', None)
+    else:
+        token = input('OPENAI_API_KEY: ').strip()
+        creds['OPENAI_API_KEY'] = token
+        creds.pop('OPENAI_OAUTH_TOKEN', None)
+
+    creds['OPENAI_AUTH_MODE'] = auth_mode
     creds['TV_USER'] = input('TV_USER: ').strip()
     creds['TV_PASS'] = input('TV_PASS: ').strip()
     save_credentials(creds)
@@ -35,6 +47,9 @@ if args.configure:
 
 import config
 OPENAI_API_KEY = config.OPENAI_API_KEY
+OPENAI_OAUTH_TOKEN = getattr(config, 'OPENAI_OAUTH_TOKEN', None)
+OPENAI_TOKEN = getattr(config, 'OPENAI_TOKEN', OPENAI_OAUTH_TOKEN or OPENAI_API_KEY)
+OPENAI_AUTH_MODE = getattr(config, 'OPENAI_AUTH_MODE', 'oauth' if OPENAI_OAUTH_TOKEN else 'api_key')
 TV_USER = config.TV_USER
 TV_PASS = config.TV_PASS
 
@@ -65,7 +80,7 @@ def tampilkan_banner():
 # Tampilkan banner di awal
 
 # Setup API
-openai.api_key = OPENAI_API_KEY
+openai.api_key = OPENAI_TOKEN
 
 # Redam output login
 with open(os.devnull, 'w') as fnull:

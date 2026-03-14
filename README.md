@@ -52,6 +52,17 @@ Perintah di atas akan menanyakan `OPENAI_API_KEY`, `TV_USER`, dan `TV_PASS` lalu
 
 ---
 
+
+## 🔐 OpenAI Login: API Key vs OAuth
+
+- Aplikasi ini sekarang bisa menggunakan **OAuth token** (`OPENAI_OAUTH_TOKEN`) atau **API Key** (`OPENAI_API_KEY`).
+- Saat menjalankan `python main.py --configure`, kamu bisa memilih mode login: `oauth` atau `api_key`.
+- Jika token OAuth tersedia, mode default akan memprioritaskan OAuth.
+
+### Apakah perlu kredit / billing?
+
+Ya. Untuk menggunakan endpoint model OpenAI di aplikasi ini, akun OpenAI kamu tetap memerlukan billing aktif / kredit yang cukup. OAuth membantu pada metode autentikasi, tetapi penggunaan model tetap dikenakan biaya sesuai pemakaian API.
+
 ## 🚀 Cara Menjalankan
 ```bash
 python main.py
