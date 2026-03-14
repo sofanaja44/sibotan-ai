@@ -161,6 +161,10 @@ def calculate_tp(open_price_str, sl_price_str, signal):
         if not open_price_str or not sl_price_str or not signal:
             return "?"
 
+        signal_normalized = signal.upper().strip()
+        if signal_normalized not in {"BUY", "SELL"}:
+            return "?"
+
         open_f = Decimal(open_price_str.replace(',', ''))
         sl_f = Decimal(sl_price_str.replace(',', ''))
         risk = abs(open_f - sl_f)
@@ -170,7 +174,7 @@ def calculate_tp(open_price_str, sl_price_str, signal):
             return "?"
 
         reward = risk * (Decimal(reward_ratio) / Decimal(risk_ratio))
-        tp_f = open_f + reward if signal.upper() == "BUY" else open_f - reward
+        tp_f = open_f + reward if signal_normalized == "BUY" else open_f - reward
         decimal_places = abs(open_price_str[::-1].find('.')) if '.' in open_price_str else 0
         quantize_str = '1.' + '0' * decimal_places if decimal_places > 0 else '1'
         tp_ai = tp_f.quantize(Decimal(quantize_str), rounding=ROUND_HALF_UP)
