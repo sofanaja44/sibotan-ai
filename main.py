@@ -62,20 +62,27 @@ def tampilkan_banner():
 
 # Tampilkan banner di awal
 
-# Setup OpenAI OAuth token (tanpa API key)
-OPENAI_OAUTH_TOKEN = os.getenv('OPENAI_OAUTH_TOKEN') or load_credentials().get('OPENAI_OAUTH_TOKEN')
-if not OPENAI_OAUTH_TOKEN:
-    OPENAI_OAUTH_TOKEN = input('OPENAI_OAUTH_TOKEN (OAuth access token): ').strip()
-    if OPENAI_OAUTH_TOKEN:
-        creds = load_credentials()
-        creds['OPENAI_OAUTH_TOKEN'] = OPENAI_OAUTH_TOKEN
+# Setup Codex OAuth token (tanpa API key)
+AI_MODEL = "codex-5.3"
+creds = load_credentials()
+CODEX_OAUTH_TOKEN = (
+    os.getenv('CODEX_OAUTH_TOKEN')
+    or os.getenv('CODEX_TOKEN')
+    or creds.get('CODEX_OAUTH_TOKEN')
+    or creds.get('OPENAI_OAUTH_TOKEN')
+)
+
+if not CODEX_OAUTH_TOKEN:
+    CODEX_OAUTH_TOKEN = input('CODEX_OAUTH_TOKEN (OAuth access token): ').strip()
+    if CODEX_OAUTH_TOKEN:
+        creds['CODEX_OAUTH_TOKEN'] = CODEX_OAUTH_TOKEN
         save_credentials(creds)
 
-if not OPENAI_OAUTH_TOKEN:
-    print('❌ OPENAI_OAUTH_TOKEN belum diisi. Silakan login OpenAI dan masukkan OAuth token Anda.')
+if not CODEX_OAUTH_TOKEN:
+    print('❌ CODEX_OAUTH_TOKEN belum diisi. Silakan login Codex/OpenAI dan masukkan OAuth token Anda.')
     sys.exit(1)
 
-client = OpenAI(api_key=OPENAI_OAUTH_TOKEN)
+client = OpenAI(api_key=CODEX_OAUTH_TOKEN)
 
 # Redam output login
 with open(os.devnull, 'w') as fnull:
@@ -294,7 +301,7 @@ Detailkan analisa berdasarkan:
     # ✅ try ini HARUS sejajar dengan prompt, bukan masuk ke dalam string prompt
     try:
         response = client.chat.completions.create(
-            model="gpt-4",
+            model=AI_MODEL,
             messages=[{"role": "user", "content": prompt}]
         )
 
@@ -373,4 +380,4 @@ Detailkan analisa berdasarkan:
     except Exception as e:
         print("\n❌ Tidak bisa menganalisa setup entry saat ini.")
         print(f"📉 Alasan: {str(e)}")
-        print("📢 Coba gunakan pair/timeframe lain, atau ulangi login OAuth OpenAI Anda.")
+        print("📢 Coba gunakan pair/timeframe lain, atau ulangi login OAuth Codex Anda.")

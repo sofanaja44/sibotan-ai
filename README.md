@@ -12,14 +12,14 @@
 
 ## 🎯 Tentang Proyek Ini
 
-**Sibotan Ai** adalah bot trading berbasis terminal yang memanfaatkan kekuatan _AI (OpenAI GPT-4)_ dan analisa teknikal dari _TradingView_.
+**Sibotan Ai** adalah bot trading berbasis terminal yang memanfaatkan kekuatan _AI (Codex 5.3)_ dan analisa teknikal dari _TradingView_.
 Dirancang untuk memberikan analisis pasar yang akurat, cepat, dan interaktif langsung dari terminal kamu.
 
 ---
 
 ## ⚙️ Fitur Utama
 
-- 📈 Analisa teknikal otomatis berbasis GPT-4
+- 📈 Analisa teknikal otomatis berbasis Codex 5.3
 - 🔍 Dukungan multi-pair: Crypto, Forex, Gold
 - 🧠 Rekomendasi BUY / SELL berdasarkan TA dan AI
 - 💹 SL & TP otomatis berdasarkan rasio Risk:Reward
@@ -50,7 +50,7 @@ python main.py --configure
 ```
 Perintah di atas akan menanyakan `TV_USER` dan `TV_PASS` lalu menyimpannya ke file `credentials.json`.
 
-Saat menjalankan bot, login AI menggunakan `OPENAI_OAUTH_TOKEN` (OAuth access token OpenAI), bukan API key.
+Saat menjalankan bot, login AI menggunakan `CODEX_OAUTH_TOKEN` (OAuth access token Codex/OpenAI), bukan API key.
 
 ---
 
@@ -82,7 +82,7 @@ Pull request sangat diterima! Untuk perubahan besar, buka issue terlebih dahulu 
 
 ## 🧠 Powered By
 
-- [OpenAI GPT-4](https://openai.com)
+- [Codex 5.3](https://openai.com/codex/)
 - [TradingView TA](https://github.com/brian-the-dev/python-tradingview-ta)
 - [tvDatafeed](https://github.com/rongardF/tvdatafeed)
 
