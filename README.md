@@ -50,20 +50,21 @@ python main.py --configure
 ```
 Perintah di atas akan menanyakan `TV_USER` dan `TV_PASS` lalu menyimpannya ke file `credentials.json`.
 
-Saat menjalankan bot, login AI menggunakan `CODEX_OAUTH_TOKEN` (OAuth access token Codex/OpenAI), bukan API key.
+Saat menjalankan bot, program akan **login akun OpenAI langsung** lewat OAuth (bukan minta input access token manual).
 
-Untuk OAuth Login otomatis (authorization code flow), siapkan environment variable berikut:
+Siapkan kredensial OAuth app berikut (via environment variable atau isi saat prompt pertama kali):
 - `OPENAI_OAUTH_CLIENT_ID`
 - `OPENAI_OAUTH_CLIENT_SECRET`
 - `OPENAI_OAUTH_REDIRECT_URI`
 
-Jika ketiganya tersedia, bot akan:
+Flow login di program:
 1. Menampilkan URL login OAuth (`https://auth.openai.com/oauth/authorize`)
-2. Meminta authorization code / redirect URL
-3. Menukar code ke token di endpoint (`https://auth.openai.com/oauth/token`)
-4. Menyimpan `access_token`, `refresh_token`, dan waktu expired ke `credentials.json`
+2. Anda login akun OpenAI di browser dan menyetujui akses
+3. Paste authorization code / redirect URL ke terminal
+4. Bot menukar code ke token di endpoint (`https://auth.openai.com/oauth/token`)
+5. Bot menyimpan `access_token`, `refresh_token`, dan waktu expired ke `credentials.json`
 
-Setelah refresh token tersimpan, bot juga akan mencoba auto-refresh access token secara otomatis pada run berikutnya.
+Pada run berikutnya, bot akan mencoba auto-refresh access token menggunakan refresh token yang tersimpan.
 
 ---
 
