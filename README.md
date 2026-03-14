@@ -44,11 +44,13 @@ pip install -r requirements.txt
 ```
 
 ### 3. Konfigurasi kredensial
-Jalankan perintah berikut untuk memasukkan API key dan akun TradingView Anda:
+Jalankan perintah berikut untuk memasukkan akun TradingView Anda (tanpa API key OpenAI):
 ```bash
 python main.py --configure
 ```
-Perintah di atas akan menanyakan `OPENAI_API_KEY`, `TV_USER`, dan `TV_PASS` lalu menyimpannya ke file `credentials.json`.
+Perintah di atas akan menanyakan `TV_USER` dan `TV_PASS` lalu menyimpannya ke file `credentials.json`.
+
+Saat menjalankan bot, login AI menggunakan `OPENAI_OAUTH_TOKEN` (OAuth access token OpenAI), bukan API key.
 
 ---
 
@@ -56,7 +58,7 @@ Perintah di atas akan menanyakan `OPENAI_API_KEY`, `TV_USER`, dan `TV_PASS` lalu
 ```bash
 python main.py
 ```
-Gunakan opsi `--configure` kapan saja jika ingin mengganti API key atau akun TradingView yang tersimpan.
+Gunakan opsi `--configure` kapan saja jika ingin mengganti akun TradingView yang tersimpan.
 
 ---
 
